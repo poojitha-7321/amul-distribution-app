@@ -77,6 +77,8 @@ export function createApp() {
   // Built React app (PWA) is served by the same process in production.
   const dist = path.resolve(process.cwd(), config.clientDist);
   if (existsSync(dist)) {
+    // Digital Asset Links (/.well-known/assetlinks.json) lets the Android TWA app run full-screen.
+    app.use('/.well-known', express.static(path.join(dist, '.well-known'), { dotfiles: 'allow', maxAge: '5m' }));
     app.use(express.static(dist, { index: false, maxAge: '1h' }));
     app.get(/^(?!\/api).*/, (_req, res) => {
       res.setHeader('Cache-Control', 'no-cache');

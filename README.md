@@ -43,7 +43,7 @@ amul-distribution-app/
 │   ├── src/routes/         HTTP layer
 │   ├── src/services/       orders, inventory, imports, reports (business rules)
 │   ├── src/seed.ts         categories, sample catalogue, demo data
-│   └── tests/              58 automated tests
+│   └── tests/              66 automated tests
 ├── render.yaml             one-click free deployment blueprint
 └── .env.example
 ```
@@ -77,7 +77,7 @@ Demo credentials are only created when `NODE_ENV` is not `production` (or `SEED_
 ### Tests
 
 ```bash
-npm test      # starts a throw-away PostgreSQL, runs 58 tests
+npm test      # starts a throw-away PostgreSQL, runs 66 tests
 ```
 
 Covered: login and role restrictions, cross-retailer isolation, order validation, reservation, full and partial delivery, cancellation, duplicate and concurrent delivery confirmation, concurrent orders competing for the last stock, rollback on failed accepts, stock adjustments, returns and damage, product and stock imports, historical-order accuracy, reports, and export safety.
@@ -107,7 +107,15 @@ Admins get a push when a retailer places an order (and on low stock); retailers 
 2. In Render set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (e.g. `mailto:you@gmail.com`). Keep the private key secret.
 3. On each device, log in, open the bell and tap **Turn on push alerts**.
 
-Android Chrome and installed PWAs work. iPhone needs iOS 16.4+ and the app added to the Home Screen first. A PWABuilder/TWA APK shows push only if notification delegation is enabled when packaging; a Capacitor APK uses a WebView and does not support Web Push.
+Android Chrome and installed PWAs work. iPhone needs iOS 16.4+ and the app added to the Home Screen first. For an Android APK that supports push, build the Trusted Web Activity in `twa/` (see `twa/README.md`); the Capacitor app in `client/android` uses a WebView and cannot receive Web Push.
+
+## Android APK
+
+- **With push notifications (recommended):** `twa/`, a Trusted Web Activity built with Bubblewrap. Needs JDK 17 and the Android SDK. Steps are in `twa/README.md`.
+- **Plain WebView app (no push):** `client/android`, a Capacitor project: `cd client && npm run android:sync && cd android && .\gradlew.bat assembleDebug`. Output: `client/android/app/build/outputs/apk/debug/app-debug.apk`.
+- **No tools at all:** https://www.pwabuilder.com can package the live site (tick notification delegation).
+
+Never commit keystores or passwords.
 
 ## Install on phones
 
