@@ -112,7 +112,7 @@ Android Chrome and installed PWAs work. iPhone needs iOS 16.4+ and the app added
 ## Android APK
 
 - **With push notifications (recommended):** `twa/`, a Trusted Web Activity built with Bubblewrap. Needs JDK 17 and the Android SDK. Steps are in `twa/README.md`.
-- **Plain WebView app (no push):** `client/android`, a Capacitor project: `cd client && npm run android:sync && cd android && .\gradlew.bat assembleDebug`. Output: `client/android/app/build/outputs/apk/debug/app-debug.apk`.
+- **Plain WebView app (no push):** `client/android`, a Capacitor project (needs **JDK 21** and the Android SDK): `cd client && npm run android:sync && cd android && .\gradlew.bat assembleDebug`. Output: `client/android/app/build/outputs/apk/debug/app-debug.apk`.
 - **No tools at all:** https://www.pwabuilder.com can package the live site (tick notification delegation).
 
 Never commit keystores or passwords.

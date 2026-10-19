@@ -46,7 +46,7 @@ Rules:
 - **Never commit** `*.keystore`, `*.jks`, passwords, or `local.properties` (already in `.gitignore`). Tell the user to back up the keystore: every future update must use the same key.
 - A debug or signed APK is fine for sideloading and WhatsApp sharing. WhatsApp may block `.apk`; rename to `.apk.zip` or share via Google Drive.
 - Fallback with no tools: PWABuilder (https://www.pwabuilder.com) packages the live site; tick notification delegation. Package ID `com.orderdesk.dairy`.
-- The Capacitor project (`client/android`, `npm run android:sync`, `gradlew assembleDebug`) still works for a plain WebView app without push. Compile SDK 36, min SDK 24.
+- The Capacitor project (`client/android`, `npm run android:sync`, `gradlew assembleDebug`) still works for a plain WebView app without push. Compile SDK 36, min SDK 24. **It needs JDK 21** (JDK 17 fails with `invalid source release: 21`); the Bubblewrap TWA uses JDK 17. If the Gradle wrapper download keeps resetting on a weak network, download `gradle-8.14.3-bin.zip` with `curl -C -` and temporarily point `distributionUrl` at the local file (do not commit that change).
 
 ## Facts worth knowing
 - The Render free instance sleeps when idle, so the first request takes about 30 seconds.
