@@ -1,0 +1,16 @@
+{
+  "name": "amul-distribution-app",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["server", "client"],
+  "scripts": {
+    "dev:db": "npm run dev:db -w server",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "migrate": "npm run migrate -w server",
+    "seed": "npm run seed -w server",
+    "build": "npm run build -w client && npm run build -w server",
+    "start": "npm run start -w server",
+    "test": "npm test -w server"
+  }
+}

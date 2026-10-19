@@ -1,0 +1,24 @@
+# Render Blueprint: one free web service (API + built PWA). Database: free Neon Postgres (see README).
+services:
+  - type: web
+    name: amul-order-desk
+    runtime: node
+    plan: free
+    buildCommand: npm ci --include=dev && npm run build
+    startCommand: npm run migrate && npm run seed && npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SEED_ADMIN_EMAIL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: APP_TIMEZONE
+        value: Asia/Kolkata

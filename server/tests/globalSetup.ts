@@ -1,0 +1,28 @@
+import EmbeddedPostgres from 'embedded-postgres';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+
+// Starts a throw-away real PostgreSQL for the whole test run (no Docker or local install required).
+let pg: EmbeddedPostgres;
+let dir: string;
+
+export async function setup() {
+  const port = 54800 + Math.floor(Math.random() * 100);
+  dir = mkdtempSync(path.join(tmpdir(), 'amul-test-pg-'));
+  pg = new EmbeddedPostgres({ databaseDir: dir, user: 'postgres', password: 'postgres', port, persistent: false, onLog: () => undefined, onError: () => undefined });
+  await pg.initialise();
+  await pg.start();
+  await pg.createDatabase('amul_test');
+  process.env.DATABASE_URL = `postgres://postgres:postgres@localhost:${port}/amul_test`;
+  process.env.JWT_SECRET = 'test-secret-test-secret-test-secret-123';
+}
+
+export async function teardown() {
+  await pg?.stop();
+  try {
+    rmSync(dir, { recursive: true, force: true });
+  } catch {
+    /* ignore */
+  }
+}
