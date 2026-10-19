@@ -143,6 +143,13 @@ async function main() {
   const demo = !config.isProd || process.env.SEED_DEMO === 'true';
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? (demo ? DEMO.adminEmail : '');
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? (demo ? DEMO.adminPassword : '');
+  const hasAdmin = await queryOne("SELECT id FROM users WHERE role = 'admin' LIMIT 1").catch(() => null);
+  if (hasAdmin && (!adminEmail || !process.env.SEED_ADMIN_PASSWORD)) {
+    // Users live in the database; the env vars are only needed to create the very first admin.
+    await migrate();
+    console.log('Admin already exists in the database; skipping admin bootstrap.');
+    return;
+  }
   if (!adminEmail || adminPassword.length < 10) {
     throw new Error('In production set SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD (min 10 chars) to create the first admin.');
   }
