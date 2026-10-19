@@ -22,8 +22,8 @@ Dairy Order Desk: order and inventory management for an Amul milk and curd distr
 - Local Windows note: embedded Postgres must be initialised with UTF-8 (`initdbFlags`), otherwise the ₹ symbol cannot be stored.
 
 ## Android APK status
-- **Push-capable TWA APK is built** (package `com.orderdesk.dairy`, v1.1.0): `twa/app-release-signed.apk`, copied to `D:\Order-Desk-Push.apk` on the user's PC. Signing key: `twa/android.keystore` (git-ignored); its password is in `D:ndroid-build\keystore-info.txt` on that PC, never in the repo. The key's SHA-256 is published in `client/public/.well-known/assetlinks.json` so the app opens full-screen once Render has redeployed. Rebuilding with the same key keeps the same fingerprint.
-- A plain Capacitor APK (no push) is at `D:\Order-Desk.apk`. Build tools live in `D:ndroid-build` (JDK 17 + JDK 21, Android SDK, Gradle caches).
+- **Push-capable TWA APK is built** (package `com.orderdesk.dairy`, v1.1.0): `twa/app-release-signed.apk`, copied to `D:\Order-Desk-Push.apk` on the user's PC. Signing key: `twa/android.keystore` (git-ignored); its password is in `D:/android-build\keystore-info.txt` on that PC, never in the repo. The key's SHA-256 is published in `client/public/.well-known/assetlinks.json` so the app opens full-screen once Render has redeployed. Rebuilding with the same key keeps the same fingerprint.
+- A plain Capacitor APK (no push) is at `D:\Order-Desk.apk`. Build tools live in `D:/android-build` (JDK 17 + JDK 21, Android SDK, Gradle caches).
 
 ## Still to do (needs the user's accounts; Claude cannot do these)
 1. **Render env vars for push**: the user must add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (e.g. `mailto:...`) to the `amul-order-desk` service in their own Render dashboard. Generate with `npx web-push generate-vapid-keys`. Push is silently disabled until they exist. The keys were shared in chat once and the user plans to rotate them; never commit keys.
