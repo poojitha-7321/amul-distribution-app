@@ -21,6 +21,9 @@ export const config = {
   bcryptRounds: isTest ? 4 : 10,
   timezone: process.env.APP_TIMEZONE ?? 'Asia/Kolkata',
   rateLimitEnabled: !isTest && process.env.RATE_LIMIT !== 'off',
+  vapidPublicKey: process.env.VAPID_PUBLIC_KEY ?? '',
+  vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? '',
+  vapidSubject: process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
   clientDist: process.env.CLIENT_DIST ?? '../client/dist',
 };
 

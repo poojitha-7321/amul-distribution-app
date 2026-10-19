@@ -2,6 +2,7 @@ import type { Request, Response, NextFunction } from 'express';
 import { z, ZodError, type ZodTypeAny } from 'zod';
 import { config } from './config.js';
 import { query, queryOne, type Queryable } from './db.js';
+import { later, pushToAdmins, pushToRetailer } from './services/push.js';
 
 // ---------- errors ----------
 export class AppError extends Error {
@@ -100,6 +101,7 @@ export async function audit(
 // ---------- notifications ----------
 export async function notifyAdmins(db: Queryable, title: string, body?: string, link?: string) {
   await db.query('INSERT INTO notifications (for_admins, title, body, link) VALUES (TRUE,$1,$2,$3)', [title, body ?? null, link ?? null]);
+  later(() => pushToAdmins({ title, body, url: link }));
 }
 
 export async function notifyRetailerUsers(db: Queryable, retailerId: number, title: string, body?: string, link?: string) {
@@ -108,6 +110,7 @@ export async function notifyRetailerUsers(db: Queryable, retailerId: number, tit
      SELECT id, $2, $3, $4 FROM users WHERE retailer_id = $1 AND active`,
     [retailerId, title, body ?? null, link ?? null],
   );
+  later(() => pushToRetailer(retailerId, { title, body, url: link }));
 }
 
 export function csvSafe(v: unknown): unknown {

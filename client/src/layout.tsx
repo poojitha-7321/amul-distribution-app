@@ -6,6 +6,8 @@ import { get, post } from './api';
 import { useAuth } from './auth';
 import { useCart } from './cart';
 import { fmtDateTime } from './format';
+import { usePush } from './push';
+import { useToast } from './ui';
 import { cx } from './ui';
 
 function NotificationBell() {
@@ -15,6 +17,13 @@ function NotificationBell() {
   const { data } = useQuery({ queryKey: ['notifications'], queryFn: () => get('/notifications'), refetchInterval: 30000 });
   const readAll = useMutation({ mutationFn: () => post('/notifications/read-all'), onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }) });
   const unread = data?.unread ?? 0;
+  const push = usePush();
+  const toast = useToast();
+  const pushLabel: Record<string, string> = {
+    unsupported: 'Push alerts are not supported on this browser. On iPhone, add the app to the Home Screen first.',
+    unconfigured: 'Push alerts are not set up on the server yet.',
+    blocked: 'Notifications are blocked. Allow them in your browser or phone settings for this app.',
+  };
   return (
     <div className="relative">
       <button onClick={() => setOpen((o) => !o)} aria-label={`Notifications${unread ? `, ${unread} unread` : ''}`} aria-expanded={open} className="relative grid size-11 place-items-center rounded-full hover:bg-white/10 lg:hover:bg-slate-100">
@@ -53,6 +62,21 @@ function NotificationBell() {
                 </li>
               ))}
             </ul>
+            <div className="border-t border-line bg-slate-50 px-4 py-3 text-sm">
+              {push.state === 'off' && (
+                <button onClick={() => push.enable().then(() => toast.success('Push alerts turned on')).catch(toast.error)} className="font-semibold text-brand-700">🔔 Turn on push alerts on this device</button>
+              )}
+              {push.state === 'on' && (
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-emerald-700">✓ Push alerts on</span>
+                  <span className="flex gap-3">
+                    <button onClick={() => push.sendTest().then(() => toast.success('Test sent')).catch(toast.error)} className="font-medium text-brand-700">Send test</button>
+                    <button onClick={() => push.disable().catch(toast.error)} className="text-muted">Turn off</button>
+                  </span>
+                </div>
+              )}
+              {pushLabel[push.state] && <span className="text-muted">{pushLabel[push.state]}</span>}
+            </div>
           </div>
         </>
       )}

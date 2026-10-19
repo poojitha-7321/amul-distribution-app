@@ -2,6 +2,7 @@ import EmbeddedPostgres from 'embedded-postgres';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import webpush from 'web-push';
 
 // Starts a throw-away real PostgreSQL for the whole test run (no Docker or local install required).
 let pg: EmbeddedPostgres;
@@ -15,6 +16,10 @@ export async function setup() {
   await pg.start();
   await pg.createDatabase('amul_test');
   process.env.DATABASE_URL = `postgres://postgres:postgres@localhost:${port}/amul_test`;
+  const vapid = webpush.generateVAPIDKeys();
+  process.env.VAPID_PUBLIC_KEY = vapid.publicKey;
+  process.env.VAPID_PRIVATE_KEY = vapid.privateKey;
+  process.env.VAPID_SUBJECT = 'mailto:test@example.com';
   process.env.JWT_SECRET = 'test-secret-test-secret-test-secret-123';
 }
 

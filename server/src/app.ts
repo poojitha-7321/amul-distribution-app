@@ -12,6 +12,7 @@ import { importsRouter } from './routes/imports.js';
 import { inventoryRouter } from './routes/inventory.js';
 import { auditRouter, dashboardRouter, notificationsRouter, settingsRouter } from './routes/misc.js';
 import { ordersRouter } from './routes/orders.js';
+import { pushRouter } from './routes/push.js';
 import { reportsRouter } from './routes/reports.js';
 import { retailersRouter } from './routes/retailers.js';
 
@@ -59,6 +60,7 @@ export function createApp() {
   api.use('/orders', ordersRouter);
   api.use('/dashboard', dashboardRouter);
   api.use('/notifications', notificationsRouter);
+  api.use('/push', pushRouter);
   api.use('/settings', settingsRouter);
 
   // Admin-only areas (each router also enforces requireAdmin itself).

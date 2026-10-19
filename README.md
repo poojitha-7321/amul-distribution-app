@@ -95,6 +95,20 @@ Covered: login and role restrictions, cross-retailer isolation, order validation
 
 Notes on the free tier: Render free services sleep after ~15 minutes idle, so the first request after a pause takes about 30 seconds. Neon's free tier suspends idle databases and wakes them automatically. For a busy distributor, the cheapest paid Render instance removes the sleep.
 
+## Real Amul milk and curd catalogue
+
+`data/amul-milk-curd-catalogue.csv` lists 47 milk and curd variants (Gold, Taaza, Shakti, Slim N Trim, Cow, T-Special, Buffalo, A2, UHT/long-life, Calci+, Lactose Free, Masti/Meetha/Low-fat/Lactose-free Dahi) with pack sizes and fat/shelf-life notes. Load it in **Admin → Import → Product catalogue**. Prices, crate sizes and minimum stock are intentionally blank: fill them in from your distributor rate list. Sizes come from Amul/Dudhsagar product pages and retail listings and vary by region, so deactivate any pack you do not supply.
+
+## Push notifications
+
+Admins get a push when a retailer places an order (and on low stock); retailers get one when their order status changes. It uses standard Web Push (VAPID), so it is free and needs no third-party service.
+
+1. Generate keys once: `npx web-push generate-vapid-keys`.
+2. In Render set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (e.g. `mailto:you@gmail.com`). Keep the private key secret.
+3. On each device, log in, open the bell and tap **Turn on push alerts**.
+
+Android Chrome and installed PWAs work. iPhone needs iOS 16.4+ and the app added to the Home Screen first. A PWABuilder/TWA APK shows push only if notification delegation is enabled when packaging; a Capacitor APK uses a WebView and does not support Web Push.
+
 ## Install on phones
 
 - **Android (Chrome)**: open the URL → menu → *Install app* / *Add to Home screen*.
