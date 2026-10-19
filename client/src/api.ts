@@ -39,6 +39,7 @@ export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
 export const get = <T = any>(path: string) => api<T>(path);
 export const post = <T = any>(path: string, body: unknown = {}) => api<T>(path, { method: 'POST', body });
 export const put = <T = any>(path: string, body: unknown) => api<T>(path, { method: 'PUT', body });
+export const del = <T = any>(path: string) => api<T>(path, { method: 'DELETE' });
 export const patch = <T = any>(path: string, body: unknown) => api<T>(path, { method: 'PATCH', body });
 
 /** Downloads a file response (reports, templates) through the authenticated session. */

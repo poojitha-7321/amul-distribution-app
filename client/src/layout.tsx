@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, Bell, Boxes, ClipboardList, Home, LayoutDashboard, LogOut, Menu, Package, Settings, ShoppingCart, Store, Upload, X } from 'lucide-react';
+import { BarChart3, Bell, Boxes, Bot, ClipboardList, Home, LayoutDashboard, LogOut, Menu, Package, Settings, ShoppingCart, Store, Upload, X } from 'lucide-react';
 import { get, post } from './api';
 import { useAuth } from './auth';
 import { useCart } from './cart';
@@ -145,6 +145,7 @@ const adminNav = [
   { to: '/admin/import', label: 'Import', icon: Upload },
   { to: '/admin/retailers', label: 'Retailers', icon: Store },
   { to: '/admin/reports', label: 'Reports', icon: BarChart3 },
+  { to: '/admin/assistant', label: 'AI Assistant', icon: Bot },
   { to: '/admin/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -26,5 +26,13 @@ services:
         sync: false
       - key: VAPID_SUBJECT
         sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: PUBLIC_URL
+        value: https://amul-order-desk.onrender.com
       - key: APP_TIMEZONE
         value: Asia/Kolkata

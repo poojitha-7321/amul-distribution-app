@@ -16,6 +16,7 @@ import Products from './pages/admin/Products';
 import ImportPage from './pages/admin/Import';
 import Retailers from './pages/admin/Retailers';
 import Reports from './pages/admin/Reports';
+import Assistant from './pages/admin/Assistant';
 import SettingsPage from './pages/admin/Settings';
 
 export default function App() {
@@ -36,6 +37,7 @@ export default function App() {
           <Route path="/admin/import" element={<ImportPage />} />
           <Route path="/admin/retailers" element={<Retailers />} />
           <Route path="/admin/reports" element={<Reports />} />
+          <Route path="/admin/assistant" element={<Assistant />} />
           <Route path="/admin/settings" element={<SettingsPage />} />
           <Route path="/account/password" element={<ChangePassword />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />

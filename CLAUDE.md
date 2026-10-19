@@ -6,7 +6,7 @@ Read this first. A previous session built everything below on another laptop. Th
 Dairy Order Desk: order and inventory management for an Amul milk and curd distributor and their retailers. See `README.md` for features, the stock policy, local run, and assumptions.
 
 - `client/`: React + TypeScript + Vite + Tailwind PWA (also has a Capacitor project in `client/android/`, see below)
-- `server/`: Node + Express + TypeScript + PostgreSQL, 66 automated tests (`npm test`)
+- `server/`: Node + Express + TypeScript + PostgreSQL, 86 automated tests (`npm test`)
 - `twa/`: Bubblewrap config for the Android app that supports **push notifications**
 - `data/amul-milk-curd-catalogue.csv`: 47 real Amul milk and curd variants, loaded via Admin → Import
 - Live: **https://amul-order-desk.onrender.com** (Render free web service + Neon free PostgreSQL)
@@ -17,6 +17,9 @@ Dairy Order Desk: order and inventory management for an Amul milk and curd distr
 - Users live in the database. `SEED_ADMIN_*` env vars only create the first admin, and can be removed afterwards.
 - Web Push (VAPID): admins get a push when a retailer places an order (and on low stock); retailers get one on status changes. Code is in `server/src/services/push.ts`, `server/src/routes/push.ts`, `client/src/push.ts`, `client/public/push-sw.js`. The bell panel has a "Turn on push alerts" button.
 - Catalogue CSV (prices, crate sizes and min stock are intentionally blank).
+
+- **AI Assistant** (admin page `/admin/assistant`): uploads go to the distributor's Google Drive (OAuth, `drive.file` scope, token encrypted in `settings`), parsed data is stored in `assistant_files`, and Groq answers via tool calls into a safe query engine (`server/src/services/assistant/`). Setup steps for `GROQ_API_KEY` and the Google OAuth client are in `README.md`. The user must create these keys and add `GROQ_API_KEY`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `PUBLIC_URL` in their own Render dashboard, then press "Connect Google Drive" in the app.
+- Local Windows note: embedded Postgres must be initialised with UTF-8 (`initdbFlags`), otherwise the ₹ symbol cannot be stored.
 
 ## Still to do (needs the user's accounts; Claude cannot do these)
 1. **Render env vars for push**: the user must add `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (e.g. `mailto:...`) to the `amul-order-desk` service in their own Render dashboard. Generate with `npx web-push generate-vapid-keys`. Push is silently disabled until they exist. The keys were shared in chat once and the user plans to rotate them; never commit keys.

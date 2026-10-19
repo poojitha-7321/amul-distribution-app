@@ -11,6 +11,7 @@ const pg = new EmbeddedPostgres({
   password: 'postgres',
   port,
   persistent: true,
+  initdbFlags: ['--encoding=UTF8', '--locale=C'],
 });
 
 if (!existsSync(path.join(dataDir, 'PG_VERSION'))) await pg.initialise();

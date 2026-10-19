@@ -10,6 +10,7 @@ import { authRouter } from './routes/auth.js';
 import { adminCatalogRouter, catalogRouter } from './routes/catalog.js';
 import { importsRouter } from './routes/imports.js';
 import { inventoryRouter } from './routes/inventory.js';
+import { assistantRouter, driveCallbackRouter } from './routes/assistant.js';
 import { auditRouter, dashboardRouter, notificationsRouter, settingsRouter } from './routes/misc.js';
 import { ordersRouter } from './routes/orders.js';
 import { pushRouter } from './routes/push.js';
@@ -53,6 +54,7 @@ export function createApp() {
   api.use(sameOriginOnly);
   api.get('/health', (_req, res) => res.json({ ok: true }));
   api.use('/auth', authRouter);
+  api.use('/drive', driveCallbackRouter); // Google redirects here; authenticated by a signed `state`, not the cookie
 
   // Everything below requires a logged-in user.
   api.use(authenticate);
@@ -69,6 +71,7 @@ export function createApp() {
   api.use('/admin/imports', requireAdmin, importsRouter);
   api.use('/admin/reports', requireAdmin, reportsRouter);
   api.use('/admin/audit', requireAdmin, auditRouter);
+  api.use('/admin/assistant', requireAdmin, assistantRouter);
   api.use('/admin', requireAdmin, adminCatalogRouter);
 
   api.use((_req, res) => res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Not found' } }));

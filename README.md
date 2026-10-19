@@ -43,7 +43,7 @@ amul-distribution-app/
 │   ├── src/routes/         HTTP layer
 │   ├── src/services/       orders, inventory, imports, reports (business rules)
 │   ├── src/seed.ts         categories, sample catalogue, demo data
-│   └── tests/              66 automated tests
+│   └── tests/              86 automated tests
 ├── render.yaml             one-click free deployment blueprint
 └── .env.example
 ```
@@ -77,7 +77,7 @@ Demo credentials are only created when `NODE_ENV` is not `production` (or `SEED_
 ### Tests
 
 ```bash
-npm test      # starts a throw-away PostgreSQL, runs 66 tests
+npm test      # starts a throw-away PostgreSQL, runs 86 tests
 ```
 
 Covered: login and role restrictions, cross-retailer isolation, order validation, reservation, full and partial delivery, cancellation, duplicate and concurrent delivery confirmation, concurrent orders competing for the last stock, rollback on failed accepts, stock adjustments, returns and damage, product and stock imports, historical-order accuracy, reports, and export safety.
@@ -116,6 +116,24 @@ Android Chrome and installed PWAs work. iPhone needs iOS 16.4+ and the app added
 - **No tools at all:** https://www.pwabuilder.com can package the live site (tick notification delegation).
 
 Never commit keystores or passwords.
+
+## AI Assistant (files in Google Drive + insights)
+
+Admin → **AI Assistant**: upload CSV, Excel, PDF or text files. Each original is saved to your Google Drive (folder "Dairy Order Desk Files"), and you can ask questions such as "which retailer buys the most?" or "show the monthly trend". The AI (Groq, free tier) never does arithmetic itself: it calls safe, read-only tools that compute totals, averages, groupings and filters exactly from your data, and the answer shows how it was calculated. PDFs and text are searched for relevant passages.
+
+**Privacy:** the question and the relevant file excerpts or computed results are sent to Groq to produce the answer. Do not upload files you are not allowed to share with a third-party AI service.
+
+### One-time setup
+
+1. **Groq key (free):** sign in at https://console.groq.com → *API Keys* → *Create API Key*. In Render add `GROQ_API_KEY`. Optionally set `GROQ_MODEL` (default `llama-3.3-70b-versatile`; `llama-3.1-8b-instant` has higher free limits but is less accurate).
+2. **Google Drive (free):**
+   1. https://console.cloud.google.com → create a project → *APIs & Services → Library* → enable **Google Drive API**.
+   2. *OAuth consent screen*: user type **External**, fill the app name and your email, add the scope `.../auth/drive.file`, and add yourself as a test user. Then click **Publish app** (set it to *In production*). Without that, Google expires the connection after 7 days. `drive.file` is a non-sensitive scope, so no verification is required; Google may show an "unverified app" notice that you can click through (*Advanced → Go to app*).
+   3. *Credentials → Create credentials → OAuth client ID → Web application*. Under **Authorized redirect URIs** add `https://amul-order-desk.onrender.com/api/drive/callback` (your real URL + `/api/drive/callback`).
+   4. In Render add `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, and `PUBLIC_URL` (your site URL, no trailing slash).
+3. Open **AI Assistant**, click **Connect Google Drive**, sign in with the Google account whose Drive should hold the files, and allow access. Then upload a file and ask questions.
+
+The app can only see files it created in your Drive (`drive.file` scope), not the rest of your Drive. The Google token is stored encrypted in the database; **changing `JWT_SECRET` requires reconnecting Drive.** Free Groq limits apply: if you hit them the assistant says so and you can retry in a minute. Files are limited to 10 MB, 50,000 rows per sheet, and scanned (image-only) PDFs are not readable.
 
 ## Install on phones
 
