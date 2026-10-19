@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.orderdesk.dairy",
+    "sha256_cert_fingerprints": ["9F:4A:E0:64:0D:F2:1E:C3:83:2E:7E:6A:05:EC:AB:74:F1:FA:28:98:5C:CB:07:7B:12:71:F7:07:B0:3D:87:5E"]
+  }
+}]

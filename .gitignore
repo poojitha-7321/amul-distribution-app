@@ -9,7 +9,8 @@ coverage
 # Android signing keys must never be committed
 *.keystore
 *.jks
-twa/*.apk
-twa/*.aab
-twa/build/
-twa/app/
+
+# Bubblewrap generates a full Android project in twa/; keep only the config and docs
+twa/*
+!twa/README.md
+!twa/twa-manifest.json

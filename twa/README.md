@@ -36,3 +36,11 @@ Check: `https://amul-order-desk.onrender.com/.well-known/assetlinks.json` must r
 
 ## Turn on push on the phone
 Install the APK, log in, open the bell, tap "Turn on push alerts", allow notifications.
+
+## Windows build notes (learned the hard way)
+- Bubblewrap calls `gradlew.bat` without `.\`, which Windows may not resolve: add the `twa` folder to `PATH` for the build.
+- Bubblewrap expects build-tools `36.1.0` and an SDK folder containing `tools/` or `bin/`. If your SDK only has `cmdline-tools/latest`, create an empty `sdk/tools` folder and (if `sdkmanager` cannot see 36.1.0) copy `build-tools/36.0.0` to `build-tools/36.1.0`.
+- Non-interactive build: set `BUBBLEWRAP_KEYSTORE_PASSWORD` and `BUBBLEWRAP_KEY_PASSWORD`, run `bubblewrap update --skipVersionUpgrade`, then `bubblewrap build --skipPwaValidation`.
+- The Play Store `.aab` signing step may fail at the very end; `app-release-signed.apk` is already produced by then and is the file to share.
+- `twa-manifest.json` must be complete (e.g. `splashScreenFadeOutDuration`, `minSdkVersion` 24, version in `appVersion` + `appVersionCode`).
+- The signing-key SHA-256 for this app's key is already published in `client/public/.well-known/assetlinks.json`. A new keystore means a new fingerprint: update that file.
