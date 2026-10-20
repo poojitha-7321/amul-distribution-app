@@ -5,7 +5,7 @@ services:
     runtime: node
     plan: free
     buildCommand: npm ci --include=dev && npm run build
-    startCommand: npm run migrate && npm run seed && npm run start
+    startCommand: node server/dist/seed.js && node server/dist/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
