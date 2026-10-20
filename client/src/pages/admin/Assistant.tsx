@@ -118,7 +118,7 @@ export default function Assistant() {
   const st = status.data;
   const list: any[] = files.data?.files ?? [];
   const toggle = (id: number) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
-  const ready = st?.ai.configured && st?.drive.connected;
+  const ready = st?.ai.configured;
 
   if (status.isLoading) return <Spinner />;
   if (status.error) return <ErrorBox error={status.error} retry={() => status.refetch()} />;
@@ -139,13 +139,13 @@ export default function Assistant() {
           {st.drive.connected ? (
             <div className="text-muted">Connected as <strong>{st.drive.email || 'your account'}</strong>. Files go to the “{st.drive.folderName}” folder. {st.drive.folderUrl && <a href={st.drive.folderUrl} target="_blank" rel="noreferrer" className="font-medium text-brand-700 underline">Open folder</a>}</div>
           ) : st.drive.configured ? (
-            <div className="text-muted">Not connected. Connect once so uploaded files are saved to your Drive.</div>
+            <div className="text-muted">Not connected. You can still upload files for analysis; connect to also save a copy of each upload to your Drive.</div>
           ) : (
             <div className="text-amber-800">Not set up on the server yet (needs <code>GOOGLE_CLIENT_ID</code> and <code>GOOGLE_CLIENT_SECRET</code>).</div>
           )}
         </div>
         {st.drive.connected
-          ? <ConfirmButton size="sm" variant="secondary" message="Disconnect Google Drive? Existing files stay in your Drive, but new uploads will be blocked until you reconnect." onConfirm={() => disconnect.mutate()}>Disconnect</ConfirmButton>
+          ? <ConfirmButton size="sm" variant="secondary" message="Disconnect Google Drive? Existing files stay in your Drive, but new uploads will not be copied to Drive until you reconnect." onConfirm={() => disconnect.mutate()}>Disconnect</ConfirmButton>
           : <Button size="sm" disabled={!st.drive.configured} loading={connect.isPending} onClick={() => connect.mutate()}>Connect Google Drive</Button>}
       </Card>
 
@@ -170,11 +170,11 @@ export default function Assistant() {
             <span className="text-sm text-brand-700 lg:hidden">{showFiles ? 'Hide' : 'Show'}</span>
           </button>
           <div className={cx('mt-3 space-y-3', !showFiles && 'hidden lg:block')}>
-            <label className={cx('flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed p-3 text-center text-sm', st.drive.connected ? 'border-brand-200 bg-brand-50/50 text-brand-800' : 'cursor-not-allowed border-slate-200 bg-slate-50 text-slate-400')}
+            <label className={cx('flex min-h-24 cursor-pointer flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed p-3 text-center text-sm', 'border-brand-200 bg-brand-50/50 text-brand-800')}
               onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f && st.drive.connected) upload.mutate(f); }}>
+              onDrop={(e) => { e.preventDefault(); const f = e.dataTransfer.files?.[0]; if (f) upload.mutate(f); }}>
               {upload.isPending ? <Spinner label="Saving and reading…" /> : (<><Upload className="size-6" /><span className="font-semibold">Upload a file</span><span className="text-xs">CSV, Excel, PDF or text · up to 10 MB</span></>)}
-              <input ref={fileInput} type="file" accept=".csv,.tsv,.xlsx,.pdf,.txt,.md,.json" disabled={!st.drive.connected || upload.isPending} className="sr-only"
+              <input ref={fileInput} type="file" accept=".csv,.tsv,.xlsx,.pdf,.txt,.md,.json" disabled={upload.isPending} className="sr-only"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) upload.mutate(f); if (fileInput.current) fileInput.current.value = ''; }} />
             </label>
             {files.isLoading ? <Spinner /> : list.length === 0 ? <p className="py-3 text-center text-sm text-muted">No files yet.</p> : (

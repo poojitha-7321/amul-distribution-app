@@ -166,11 +166,12 @@ describe('Google Drive connection', () => {
 });
 
 describe('uploading files', () => {
-  it('requires a connected Drive and saves nothing otherwise', async () => {
+  it('still analyses the file when Drive is not connected, without calling Drive', async () => {
     const r = await admin.post('/api/admin/assistant/files').attach('file', csvFile, 'sales.csv');
-    expect(r.status).toBe(409);
-    expect(r.body.error.message).toMatch(/Connect it/);
-    expect((await query('SELECT id FROM assistant_files')).length).toBe(0);
+    expect(r.status).toBe(201);
+    expect(r.body.file).toMatchObject({ name: 'sales.csv', kind: 'table', rowCount: 5, driveLink: null });
+    expect(driveUploads).toHaveLength(0);
+    expect((await query('SELECT id FROM assistant_files')).length).toBe(1);
   });
 
   it('saves the original to Drive and the parsed data to the database', async () => {

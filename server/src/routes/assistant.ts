@@ -73,18 +73,19 @@ assistantRouter.post(
     const { originalname, buffer, mimetype, size } = req.file;
     // Fail fast on unreadable files, before anything is written to Drive.
     const parsed = await parseUploadedFile(buffer, originalname);
-    const drive = await uploadToDrive(originalname, mimetype || 'application/octet-stream', buffer);
+    // Drive is optional: without a connection the file is still analysable, just not backed up.
+    const drive = (await driveStatus()).connected ? await uploadToDrive(originalname, mimetype || 'application/octet-stream', buffer) : null;
     const row = await queryOne<any>(
       `INSERT INTO assistant_files (name, mime_type, kind, size_bytes, drive_file_id, drive_link, tables, text_content, row_count, uploaded_by)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, name, kind, size_bytes, row_count, drive_link, created_at`,
       [
-        originalname, mimetype, parsed.kind, size, drive.id, drive.link,
+        originalname, mimetype, parsed.kind, size, drive?.id ?? null, drive?.link ?? null,
         parsed.kind === 'table' ? JSON.stringify(parsed.tables) : null,
         parsed.kind === 'text' ? parsed.text : null,
         parsed.rowCount, req.user!.id,
       ],
     );
-    await audit(pool, req.user!.id, 'assistant.upload', 'assistant_file', row.id, { name: originalname, size, driveId: drive.id }, req.ip);
+    await audit(pool, req.user!.id, 'assistant.upload', 'assistant_file', row.id, { name: originalname, size, driveId: drive?.id ?? null }, req.ip);
     const truncated = parsed.kind === 'table' && parsed.tables.some((t) => t.truncated);
     res.status(201).json({
       file: fileSummary({ ...row, sheets: parsed.kind === 'table' ? parsed.tables.map((t) => ({ name: t.name, columns: t.columns.map((c) => c.name) })) : null }),
