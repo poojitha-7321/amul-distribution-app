@@ -3,8 +3,8 @@ import path from 'node:path';
 
 // OCR for scanned (image-only) PDFs. Pages are rendered one at a time and recognised sequentially so memory
 // stays within a small free instance.
-const MAX_PAGES = 10;
-const SCALE = 2;
+const MAX_PAGES = 5;
+const SCALE = 1.5;
 const GOOD_CONFIDENCE = 60;
 
 async function rotate(png: Uint8Array, degrees: number): Promise<Buffer> {
@@ -25,6 +25,9 @@ export async function ocrPdf(data: Uint8Array): Promise<string> {
   const { createWorker } = await import('tesseract.js');
   const pdf = await getDocumentProxy(data.slice());
   const pages = Math.min(pdf.numPages, MAX_PAGES);
+  const t0 = Date.now();
+  const mb = () => `${Math.round(process.memoryUsage().rss / 1048576)} MB`;
+  console.log(`OCR start: ${pages}/${pdf.numPages} pages, rss ${mb()}`);
   const worker = await createWorker('eng', 1, { cachePath: path.join(os.tmpdir(), 'tessdata') });
   try {
     const out: string[] = ['(Text recognised from a scanned PDF by OCR: digits and table columns may contain errors, so say so when quoting figures.)'];
@@ -39,10 +42,12 @@ export async function ocrPdf(data: Uint8Array): Promise<string> {
           if (r.data.confidence > bestConf) { bestConf = r.data.confidence; angle = a; }
           if (a === 0 && r.data.confidence >= GOOD_CONFIDENCE) break;
         }
+        console.log(`OCR rotation ${angle} chosen, rss ${mb()}`);
       }
       const png = new Uint8Array(await renderPageAsImage(data.slice(), i, { canvasImport: () => import('@napi-rs/canvas'), scale: SCALE }));
       const r = await worker.recognize(await rotate(png, angle));
       out.push(`--- Page ${i} ---\n${r.data.text}`);
+      console.log(`OCR page ${i} done at ${Math.round((Date.now() - t0) / 1000)} s, rss ${mb()}`);
     }
     if (pdf.numPages > pages) out.push(`(Only the first ${pages} of ${pdf.numPages} pages were read.)`);
     return out.join('\n\n');
