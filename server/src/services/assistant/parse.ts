@@ -162,9 +162,18 @@ export async function parseUploadedFile(buffer: Buffer, filename: string): Promi
       const pdf = await getDocumentProxy(new Uint8Array(buffer));
       text = (await extractText(pdf, { mergePages: true })).text as string;
     } catch {
-      throw badRequest('Could not read this PDF. Scanned (image-only) PDFs are not supported.');
+      throw badRequest('Could not read this PDF. It may be damaged or password-protected.');
     }
-    return textResult(text, 'This PDF has no readable text (it may be a scanned image).');
+    if (text.trim().length < 20) {
+      // No text layer: treat it as a scan and run OCR.
+      try {
+        const { ocrPdf } = await import('./ocr.js');
+        text = await ocrPdf(new Uint8Array(buffer));
+      } catch {
+        throw badRequest('This PDF is a scanned image and the text could not be recognised. Try a clearer scan or a text PDF.');
+      }
+    }
+    return textResult(text, 'No readable text was found in this PDF, even after text recognition.');
   }
 
   if (['.txt', '.md', '.json', '.log'].includes(ext)) {
