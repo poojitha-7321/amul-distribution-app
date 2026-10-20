@@ -25,6 +25,8 @@ export const config = {
   vapidPrivateKey: process.env.VAPID_PRIVATE_KEY ?? '',
   vapidSubject: process.env.VAPID_SUBJECT ?? 'mailto:admin@example.com',
   groqApiKey: process.env.GROQ_API_KEY ?? '',
+  // Short free-tier rate limits are waited out automatically; 0 disables waiting.
+  groqRetryMaxWaitSec: Number(process.env.GROQ_RETRY_MAX_WAIT ?? 25),
   groqModel: process.env.GROQ_MODEL ?? 'llama-3.3-70b-versatile',
   googleClientId: process.env.GOOGLE_CLIENT_ID ?? '',
   googleClientSecret: process.env.GOOGLE_CLIENT_SECRET ?? '',

@@ -5,10 +5,10 @@ import { z } from 'zod';
 import { requireAdmin } from '../auth.js';
 import { config } from '../config.js';
 import { pool, query, queryOne } from '../db.js';
-import { asyncRoute, audit, badRequest, notFound, parse } from '../lib.js';
+import { AppError, asyncRoute, audit, badRequest, notFound, parse } from '../lib.js';
 import { runAgent, loadFiles } from '../services/assistant/agent.js';
 import { aiConfigured } from '../services/assistant/groq.js';
-import { parseUploadedFile } from '../services/assistant/parse.js';
+import { NeedsOcrError, ocrPdfFile, parseUploadedFile } from '../services/assistant/parse.js';
 import { authUrl, completeConnect, disconnectDrive, driveStatus, uploadToDrive } from '../services/drive.js';
 
 export const assistantRouter = Router();
@@ -49,6 +49,7 @@ assistantRouter.post(
 // ---------------------------------------------------------------- files
 const fileSummary = (r: any) => ({
   id: r.id, name: r.name, kind: r.kind, sizeBytes: r.size_bytes, rowCount: r.row_count, driveLink: r.drive_link, createdAt: r.created_at,
+  status: r.status ?? 'ready', error: r.error ?? null,
   sheets: r.sheets ?? null,
 });
 
@@ -56,7 +57,7 @@ assistantRouter.get(
   '/files',
   asyncRoute(async (_req, res) => {
     const rows = await query(
-      `SELECT id, name, kind, size_bytes, row_count, drive_link, created_at,
+      `SELECT id, name, kind, size_bytes, row_count, drive_link, created_at, status, error,
               (SELECT jsonb_agg(jsonb_build_object('name', t->>'name', 'columns', (SELECT jsonb_agg(c->>'name') FROM jsonb_array_elements(t->'columns') c)))
                  FROM jsonb_array_elements(COALESCE(tables, '[]'::jsonb)) t) AS sheets
          FROM assistant_files ORDER BY id DESC LIMIT 200`,
@@ -65,6 +66,21 @@ assistantRouter.get(
   }),
 );
 
+// Only one scan is read at a time: OCR is memory- and CPU-heavy on a small server.
+let ocrBusy = false;
+
+async function readScanInBackground(id: number, buffer: Buffer) {
+  ocrBusy = true;
+  try {
+    const parsed = await ocrPdfFile(buffer);
+    await pool.query(`UPDATE assistant_files SET status = 'ready', error = NULL, text_content = $2 WHERE id = $1`, [id, parsed.kind === 'text' ? parsed.text : null]);
+  } catch (e: any) {
+    await pool.query(`UPDATE assistant_files SET status = 'failed', error = $2 WHERE id = $1`, [id, String(e?.message ?? 'Could not read this file').slice(0, 300)]).catch(() => {});
+  } finally {
+    ocrBusy = false;
+  }
+}
+
 assistantRouter.post(
   '/files',
   upload.single('file'),
@@ -72,20 +88,31 @@ assistantRouter.post(
     if (!req.file) throw badRequest('Choose a file to upload');
     const { originalname, buffer, mimetype, size } = req.file;
     // Fail fast on unreadable files, before anything is written to Drive.
-    const parsed = await parseUploadedFile(buffer, originalname);
+    let parsed: Awaited<ReturnType<typeof parseUploadedFile>> | null = null;
+    try {
+      parsed = await parseUploadedFile(buffer, originalname, { deferOcr: true });
+    } catch (e) {
+      if (!(e instanceof NeedsOcrError)) throw e;
+      if (ocrBusy) throw new AppError(429, 'BUSY', 'Another scanned file is still being read. Wait for it to finish, then upload this one.');
+    }
     // Drive is optional: without a connection the file is still analysable, just not backed up.
     const drive = (await driveStatus()).connected ? await uploadToDrive(originalname, mimetype || 'application/octet-stream', buffer) : null;
     const row = await queryOne<any>(
-      `INSERT INTO assistant_files (name, mime_type, kind, size_bytes, drive_file_id, drive_link, tables, text_content, row_count, uploaded_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id, name, kind, size_bytes, row_count, drive_link, created_at`,
+      `INSERT INTO assistant_files (name, mime_type, kind, size_bytes, drive_file_id, drive_link, tables, text_content, row_count, uploaded_by, status)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id, name, kind, size_bytes, row_count, drive_link, created_at, status, error`,
       [
-        originalname, mimetype, parsed.kind, size, drive?.id ?? null, drive?.link ?? null,
-        parsed.kind === 'table' ? JSON.stringify(parsed.tables) : null,
-        parsed.kind === 'text' ? parsed.text : null,
-        parsed.rowCount, req.user!.id,
+        originalname, mimetype, parsed?.kind ?? 'text', size, drive?.id ?? null, drive?.link ?? null,
+        parsed?.kind === 'table' ? JSON.stringify(parsed.tables) : null,
+        parsed?.kind === 'text' ? parsed.text : null,
+        parsed?.rowCount ?? 0, req.user!.id, parsed ? 'ready' : 'processing',
       ],
     );
     await audit(pool, req.user!.id, 'assistant.upload', 'assistant_file', row.id, { name: originalname, size, driveId: drive?.id ?? null }, req.ip);
+    if (!parsed) {
+      void readScanInBackground(row.id, buffer);
+      res.status(202).json({ file: fileSummary(row), processing: true });
+      return;
+    }
     const truncated = parsed.kind === 'table' && parsed.tables.some((t) => t.truncated);
     res.status(201).json({
       file: fileSummary({ ...row, sheets: parsed.kind === 'table' ? parsed.tables.map((t) => ({ name: t.name, columns: t.columns.map((c) => c.name) })) : null }),

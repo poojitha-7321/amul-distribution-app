@@ -40,7 +40,11 @@ export default function Assistant() {
   const [showHistory, setShowHistory] = useState(false);
 
   const status = useQuery({ queryKey: ['assistant-status'], queryFn: () => get('/admin/assistant/status') });
-  const files = useQuery({ queryKey: ['assistant-files'], queryFn: () => get('/admin/assistant/files') });
+  const files = useQuery({
+    queryKey: ['assistant-files'], queryFn: () => get('/admin/assistant/files'),
+    // Scanned PDFs are read in the background: keep checking until they are done.
+    refetchInterval: (q: any) => (q.state.data?.files?.some((f: any) => f.status === 'processing') ? 5000 : false),
+  });
   const threads = useQuery({ queryKey: ['assistant-threads'], queryFn: () => get('/admin/assistant/threads'), enabled: showHistory });
 
   // Returning from Google's consent screen
@@ -73,9 +77,10 @@ export default function Assistant() {
       return api('/admin/assistant/files', { form });
     },
     onSuccess: (r: any) => {
-      toast.success(`Saved "${r.file.name}" to Google Drive`);
+      if (r.processing) toast.success(`Reading the scanned file "${r.file.name}"… this can take a few minutes. You can keep using the app.`);
+      else toast.success(r.file.driveLink ? `Saved "${r.file.name}" to Google Drive` : `Added "${r.file.name}"`);
       if (r.warning) toast.error(new Error(r.warning));
-      setSelected((s) => [...s, r.file.id]);
+      if (!r.processing) setSelected((s) => [...s, r.file.id]);
       void qc.invalidateQueries({ queryKey: ['assistant-files'] });
     },
     onError: toast.error,
@@ -182,10 +187,12 @@ export default function Assistant() {
                 {list.map((f) => (
                   <li key={f.id} className="rounded-xl border border-line p-2.5">
                     <label className="flex cursor-pointer items-start gap-2">
-                      <input type="checkbox" className="mt-1 size-5" checked={selected.includes(f.id)} onChange={() => toggle(f.id)} aria-label={`Use ${f.name} in questions`} />
+                      <input type="checkbox" className="mt-1 size-5" disabled={f.status !== 'ready'} checked={selected.includes(f.id)} onChange={() => toggle(f.id)} aria-label={`Use ${f.name} in questions`} />
                       <span className="min-w-0 flex-1">
                         <span className="flex items-center gap-1.5 text-sm font-semibold">{f.kind === 'table' ? <FileSpreadsheet className="size-4 shrink-0 text-emerald-600" /> : <FileText className="size-4 shrink-0 text-brand-600" />}<span className="truncate">{f.name}</span></span>
                         <span className="block text-xs text-muted">{f.kind === 'table' ? `${f.rowCount.toLocaleString('en-IN')} rows · ${f.sheets?.length ?? 1} sheet(s)` : 'Document'} · {fmtDateTime(f.createdAt)}</span>
+                        {f.status === 'processing' && <span className="block text-xs font-medium text-amber-700">Reading the scan… this can take a few minutes</span>}
+                        {f.status === 'failed' && <span className="block text-xs font-medium text-red-700">Could not read this file: {f.error}</span>}
                       </span>
                     </label>
                     <div className="mt-1 flex justify-end gap-1">

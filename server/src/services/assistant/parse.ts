@@ -119,7 +119,24 @@ function detectDelimiter(text: string): string {
   return Object.entries(counts).sort((a, b) => b[1] - a[1])[0][0];
 }
 
-export async function parseUploadedFile(buffer: Buffer, filename: string): Promise<ParsedFile> {
+export class NeedsOcrError extends Error {
+  constructor() { super('This PDF is a scan and needs text recognition'); }
+}
+
+/** Reads a scanned PDF with OCR (slow: seconds per page on a small server). */
+export async function ocrPdfFile(buffer: Buffer): Promise<ParsedFile> {
+  let text: string;
+  try {
+    const { ocrPdf } = await import('./ocr.js');
+    text = await ocrPdf(new Uint8Array(buffer));
+  } catch (e) {
+    console.error('OCR failed', e);
+    throw badRequest('This PDF is a scanned image and the text could not be recognised. Try a clearer scan or a text PDF.');
+  }
+  return textResult(text, 'No readable text was found in this PDF, even after text recognition.');
+}
+
+export async function parseUploadedFile(buffer: Buffer, filename: string, opts: { deferOcr?: boolean } = {}): Promise<ParsedFile> {
   const lower = filename.toLowerCase();
   const ext = lower.includes('.') ? lower.slice(lower.lastIndexOf('.')) : '';
 
@@ -165,13 +182,9 @@ export async function parseUploadedFile(buffer: Buffer, filename: string): Promi
       throw badRequest('Could not read this PDF. It may be damaged or password-protected.');
     }
     if (text.trim().length < 20) {
-      // No text layer: treat it as a scan and run OCR.
-      try {
-        const { ocrPdf } = await import('./ocr.js');
-        text = await ocrPdf(new Uint8Array(buffer));
-      } catch {
-        throw badRequest('This PDF is a scanned image and the text could not be recognised. Try a clearer scan or a text PDF.');
-      }
+      // No text layer: it is a scan. OCR is slow, so callers may defer it to a background job.
+      if (opts.deferOcr) throw new NeedsOcrError();
+      return ocrPdfFile(buffer);
     }
     return textResult(text, 'No readable text was found in this PDF, even after text recognition.');
   }

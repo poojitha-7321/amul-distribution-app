@@ -1,11 +1,15 @@
 import os from 'node:os';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 
 // OCR for scanned (image-only) PDFs. Pages are rendered one at a time and recognised sequentially so memory
 // stays within a small free instance.
 const MAX_PAGES = 5;
 const SCALE = 1.5;
 const GOOD_CONFIDENCE = 60;
+
+// English language data ships in node_modules, so OCR never depends on a download at request time.
+const langPath = () => path.join(path.dirname(createRequire(import.meta.url).resolve('@tesseract.js-data/eng/package.json')), '4.0.0_best_int');
 
 async function rotate(png: Uint8Array, degrees: number): Promise<Buffer> {
   if (degrees === 0) return Buffer.from(png);
@@ -28,7 +32,8 @@ export async function ocrPdf(data: Uint8Array): Promise<string> {
   const t0 = Date.now();
   const mb = () => `${Math.round(process.memoryUsage().rss / 1048576)} MB`;
   console.log(`OCR start: ${pages}/${pdf.numPages} pages, rss ${mb()}`);
-  const worker = await createWorker('eng', 1, { cachePath: path.join(os.tmpdir(), 'tessdata') });
+  const worker = await createWorker('eng', 1, { langPath: langPath(), cachePath: path.join(os.tmpdir(), 'tessdata') });
+  console.log(`OCR worker ready at ${Math.round((Date.now() - t0) / 1000)} s, rss ${mb()}`);
   try {
     const out: string[] = ['(Text recognised from a scanned PDF by OCR: digits and table columns may contain errors, so say so when quoting figures.)'];
     let angle = 0;
@@ -39,6 +44,7 @@ export async function ocrPdf(data: Uint8Array): Promise<string> {
         let bestConf = -1;
         for (const a of [0, 90, 270, 180]) {
           const r = await worker.recognize(await rotate(small, a));
+          console.log(`OCR try ${a}: confidence ${Math.round(r.data.confidence)}`);
           if (r.data.confidence > bestConf) { bestConf = r.data.confidence; angle = a; }
           if (a === 0 && r.data.confidence >= GOOD_CONFIDENCE) break;
         }

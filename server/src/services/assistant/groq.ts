@@ -20,21 +20,31 @@ export async function groqChat(messages: ChatMessage[], tools: ToolDef[]): Promi
   if (!aiConfigured()) {
     throw new AppError(503, 'AI_NOT_CONFIGURED', 'The AI assistant is not set up yet (missing GROQ_API_KEY on the server).');
   }
+  const body = JSON.stringify({
+    model: config.groqModel,
+    messages,
+    tools,
+    tool_choice: 'auto',
+    temperature: 0.1,
+    max_tokens: 1500,
+    // gpt-oss models "think" before answering; low effort saves tokens against the free per-minute limit.
+    ...(config.groqModel.startsWith('openai/gpt-oss') ? { reasoning_effort: 'low' } : {}),
+  });
+  const send = () => fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${config.groqApiKey}`, 'Content-Type': 'application/json' },
+    body,
+    signal: AbortSignal.timeout(60_000),
+  });
   let res: Response;
   try {
-    res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${config.groqApiKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: config.groqModel,
-        messages,
-        tools,
-        tool_choice: 'auto',
-        temperature: 0.1,
-        max_tokens: 1500,
-      }),
-      signal: AbortSignal.timeout(60_000),
-    });
+    res = await send();
+    // A short per-minute limit clears in seconds: wait it out once instead of failing the question.
+    const wait = Number(res.headers.get('retry-after'));
+    if (res.status === 429 && wait > 0 && wait <= config.groqRetryMaxWaitSec) {
+      await new Promise((r) => setTimeout(r, (wait + 1) * 1000));
+      res = await send();
+    }
   } catch {
     throw new AppError(504, 'AI_UNREACHABLE', 'Could not reach the AI service. Please try again.');
   }

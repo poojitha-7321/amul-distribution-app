@@ -21,6 +21,7 @@ export async function setup() {
   process.env.VAPID_PRIVATE_KEY = vapid.privateKey;
   process.env.VAPID_SUBJECT = 'mailto:test@example.com';
   process.env.GROQ_API_KEY = 'gsk_test';
+  process.env.GROQ_RETRY_MAX_WAIT = '0';
   process.env.GOOGLE_CLIENT_ID = 'test-client-id';
   process.env.GOOGLE_CLIENT_SECRET = 'test-client-secret';
   process.env.PUBLIC_URL = 'https://app.example.com';

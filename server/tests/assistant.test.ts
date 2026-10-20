@@ -312,3 +312,15 @@ describe('asking questions about uploaded files', () => {
     expect((await query('SELECT id FROM assistant_files')).length).toBe(0);
   });
 });
+
+describe('files still being read in the background', () => {
+  it('lists them with their status but never feeds them to the assistant', async () => {
+    await query(`INSERT INTO assistant_files (name, kind, size_bytes, status) VALUES ('scan.pdf', 'text', 10, 'processing'), ('bad.pdf', 'text', 10, 'failed')`);
+    await query(`UPDATE assistant_files SET error = 'unreadable' WHERE name = 'bad.pdf'`);
+    const list = await admin.get('/api/admin/assistant/files');
+    expect(list.body.files.map((f: any) => [f.name, f.status])).toEqual(expect.arrayContaining([['scan.pdf', 'processing'], ['bad.pdf', 'failed']]));
+    expect(list.body.files.find((f: any) => f.name === 'bad.pdf').error).toBe('unreadable');
+    const { loadFiles } = await import('../src/services/assistant/agent.js');
+    expect(await loadFiles([])).toHaveLength(0);
+  });
+});

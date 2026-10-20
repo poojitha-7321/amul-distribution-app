@@ -152,9 +152,9 @@ function catalog(files: FileRow[]): string {
 
 export async function loadFiles(ids?: number[]): Promise<FileRow[]> {
   if (ids && ids.length) {
-    return query<FileRow>('SELECT id, name, kind, tables, text_content, row_count FROM assistant_files WHERE id = ANY($1::int[]) ORDER BY id', [ids]);
+    return query<FileRow>("SELECT id, name, kind, tables, text_content, row_count FROM assistant_files WHERE id = ANY($1::int[]) AND status = 'ready' ORDER BY id", [ids]);
   }
-  return query<FileRow>('SELECT id, name, kind, tables, text_content, row_count FROM assistant_files ORDER BY id DESC LIMIT 8');
+  return query<FileRow>("SELECT id, name, kind, tables, text_content, row_count FROM assistant_files WHERE status = 'ready' ORDER BY id DESC LIMIT 8");
 }
 
 export async function runAgent(opts: { question: string; history: { role: 'user' | 'assistant'; content: string }[]; files: FileRow[] }) {
@@ -162,6 +162,7 @@ export async function runAgent(opts: { question: string; history: { role: 'user'
   const byId = new Map(files.map((f) => [f.id, f]));
   const system =
     'You are a data analyst assistant for a milk and curd distributor in India. Amounts are in rupees (₹). ' +
+    'Uploaded bills are usually purchase invoices from Amul/GCMMF to the distributor, so the rates on them are purchase prices paid by the distributor. ' +
     'Answer ONLY from the uploaded files listed below. To get any number you MUST call the tools; never estimate, guess or calculate in your head. ' +
     'Pick file_id and exact column names from the list. If the data cannot answer the question, say so plainly and say what is missing. ' +
     'Reply concisely in English by default; use another language only if the user clearly writes a full message in it. Use markdown; show comparisons as a table. Mention which file the figures came from. ' +
